@@ -70,22 +70,22 @@
   canvas#viz-main {
     position: fixed;
     top: 0; left: 0;
-    width: 100%; height: 55%;
+    width: 100%;
     z-index: 1;
     pointer-events: none;
   }
 
   canvas#viz-time {
     position: fixed;
-    top: 55%; left: 0;
-    width: 100%; height: 20%;
+    left: 0;
+    width: 100%;
     z-index: 1;
     pointer-events: none;
   }
 
   .divider-line {
     position: fixed;
-    top: 55%; left: 0; right: 0;
+    left: 0; right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(123, 104, 238, 0.25), transparent);
     z-index: 5;
@@ -93,7 +93,6 @@
 
   .time-label {
     position: fixed;
-    top: calc(55% - 5px);
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.5rem;
@@ -118,6 +117,46 @@
     -webkit-backdrop-filter: blur(12px);
     max-height: 45%;
     overflow-y: auto;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .controls-panel.minimised {
+    transform: translateY(calc(100% - 48px - var(--safe-bottom)));
+  }
+
+  .btn-minimise {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 28px;
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.25s ease;
+  }
+
+  .btn-minimise:hover {
+    color: var(--text-primary);
+  }
+
+  .btn-minimise .chevron {
+    display: inline-block;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .controls-panel.minimised .btn-minimise .chevron {
+    transform: rotate(180deg);
   }
 
   header {
@@ -285,7 +324,8 @@
 
 <div class="info-bar" id="info-bar">STFT &middot; 44100 Hz</div>
 
-<div class="controls-panel">
+<div class="controls-panel" id="controls-panel">
+  <button class="btn-minimise" id="btn-minimise"><span class="chevron">&#x25BC;</span></button>
   <button class="btn-listen" id="btn-listen">LISTEN</button>
 
   <div class="ornament">
@@ -463,14 +503,21 @@ const ctxTime = canvasTime.getContext('2d');
 
 function resize() {
   dpr = window.devicePixelRatio || 1;
+  const mainPct = minimised ? 0.70 : 0.55;
+  const timePct = minimised ? 0.25 : 0.20;
   canvasMain.width = window.innerWidth * dpr;
-  canvasMain.height = Math.floor(window.innerHeight * 0.55) * dpr;
+  canvasMain.height = Math.floor(window.innerHeight * mainPct) * dpr;
   canvasMain.style.width = window.innerWidth + 'px';
-  canvasMain.style.height = Math.floor(window.innerHeight * 0.55) + 'px';
+  canvasMain.style.height = Math.floor(window.innerHeight * mainPct) + 'px';
   canvasTime.width = window.innerWidth * dpr;
-  canvasTime.height = Math.floor(window.innerHeight * 0.20) * dpr;
+  canvasTime.height = Math.floor(window.innerHeight * timePct) * dpr;
   canvasTime.style.width = window.innerWidth + 'px';
-  canvasTime.style.height = Math.floor(window.innerHeight * 0.20) + 'px';
+  canvasTime.style.height = Math.floor(window.innerHeight * timePct) + 'px';
+  // Update CSS positions for divider and time canvas
+  const mainH = Math.floor(window.innerHeight * mainPct);
+  canvasTime.style.top = mainH + 'px';
+  document.querySelector('.divider-line').style.top = mainH + 'px';
+  document.querySelector('.time-label').style.top = (mainH - 5) + 'px';
   history = [];
   initParticles();
 }
@@ -672,6 +719,17 @@ function drawTimeWaveform(timeData) {
   }
   ctxTime.stroke();
 }
+
+// Minimise toggle
+const controlsPanel = document.getElementById('controls-panel');
+const btnMinimise = document.getElementById('btn-minimise');
+let minimised = false;
+
+btnMinimise.addEventListener('click', () => {
+  minimised = !minimised;
+  controlsPanel.classList.toggle('minimised', minimised);
+  resize();
+});
 
 // Bindings
 btnListen.addEventListener('click', toggleListen);
