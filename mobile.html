@@ -112,51 +112,43 @@
     z-index: 50;
     background: var(--panel);
     border-top: 1px solid rgba(123, 104, 238, 0.2);
-    padding: 14px 20px calc(14px + var(--safe-bottom));
+    padding: 0 20px calc(14px + var(--safe-bottom));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    max-height: 45%;
+    max-height: 50%;
     overflow-y: auto;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .controls-panel.minimised {
-    transform: translateY(calc(100% - 48px - var(--safe-bottom)));
+    max-height: 44px;
+    overflow: hidden;
   }
 
-  .btn-minimise {
-    position: absolute;
-    top: -28px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 48px;
-    height: 28px;
-    border: 1px solid rgba(123, 104, 238, 0.3);
-    border-bottom: none;
-    border-radius: 10px 10px 0 0;
-    background: var(--panel);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: var(--text-dim);
-    font-size: 0.75rem;
-    cursor: pointer;
+  .controls-inner {
+    padding-top: 6px;
+  }
+
+  .handle-bar {
+    width: 100%;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.25s ease;
+    cursor: pointer;
+    flex-shrink: 0;
   }
 
-  .btn-minimise:hover {
-    color: var(--text-primary);
+  .handle-pill {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(123, 104, 238, 0.4);
+    transition: background 0.2s ease;
   }
 
-  .btn-minimise .chevron {
-    display: inline-block;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .controls-panel.minimised .btn-minimise .chevron {
-    transform: rotate(180deg);
+  .handle-bar:active .handle-pill {
+    background: rgba(123, 104, 238, 0.7);
   }
 
   header {
@@ -325,54 +317,56 @@
 <div class="info-bar" id="info-bar">STFT &middot; 44100 Hz</div>
 
 <div class="controls-panel" id="controls-panel">
-  <button class="btn-minimise" id="btn-minimise"><span class="chevron">&#x25BC;</span></button>
-  <button class="btn-listen" id="btn-listen">LISTEN</button>
+  <div class="handle-bar" id="handle-bar"><div class="handle-pill"></div></div>
+  <div class="controls-inner">
+    <button class="btn-listen" id="btn-listen">LISTEN</button>
 
-  <div class="ornament">
-    <span>&middot;</span>
-    <span class="line"></span>
-    <span>&#x2736;</span>
-    <span class="line"></span>
-    <span>&middot;</span>
-  </div>
-
-  <div class="mode-label">Analysis Mode</div>
-  <div class="mode-group">
-    <button class="mode-btn selected" data-mode="stft">STFT</button>
-    <button class="mode-btn" data-mode="cwt">CWT</button>
-    <button class="mode-btn" data-mode="constantq">Constant-Q</button>
-  </div>
-
-  <div class="ornament">
-    <span>&middot;</span>
-    <span class="line"></span>
-    <span>&#x2736;</span>
-    <span class="line"></span>
-    <span>&middot;</span>
-  </div>
-
-  <div class="control-group">
-    <div class="control-label">
-      <span>Gain</span>
-      <span id="val-gain">80%</span>
+    <div class="ornament">
+      <span>&middot;</span>
+      <span class="line"></span>
+      <span>&#x2736;</span>
+      <span class="line"></span>
+      <span>&middot;</span>
     </div>
-    <input type="range" class="slider" id="slider-gain" min="0" max="100" value="80">
-  </div>
 
-  <div class="control-group">
-    <div class="control-label">
-      <span>Smoothing</span>
-      <span id="val-smooth">80%</span>
+    <div class="mode-label">Analysis Mode</div>
+    <div class="mode-group">
+      <button class="mode-btn selected" data-mode="stft">STFT</button>
+      <button class="mode-btn" data-mode="cwt">CWT</button>
+      <button class="mode-btn" data-mode="constantq">Constant-Q</button>
     </div>
-    <input type="range" class="slider" id="slider-smooth" min="0" max="100" value="80">
-  </div>
 
-  <div class="control-group">
-    <div class="control-label">
-      <span>Brightness</span>
-      <span id="val-bright">100%</span>
+    <div class="ornament">
+      <span>&middot;</span>
+      <span class="line"></span>
+      <span>&#x2736;</span>
+      <span class="line"></span>
+      <span>&middot;</span>
     </div>
-    <input type="range" class="slider" id="slider-bright" min="10" max="100" value="100">
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>Gain</span>
+        <span id="val-gain">80%</span>
+      </div>
+      <input type="range" class="slider" id="slider-gain" min="0" max="100" value="80">
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>Smoothing</span>
+        <span id="val-smooth">80%</span>
+      </div>
+      <input type="range" class="slider" id="slider-smooth" min="0" max="100" value="80">
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>Brightness</span>
+        <span id="val-bright">100%</span>
+      </div>
+      <input type="range" class="slider" id="slider-bright" min="10" max="100" value="100">
+    </div>
   </div>
 </div>
 
@@ -722,10 +716,10 @@ function drawTimeWaveform(timeData) {
 
 // Minimise toggle
 const controlsPanel = document.getElementById('controls-panel');
-const btnMinimise = document.getElementById('btn-minimise');
+const handleBar = document.getElementById('handle-bar');
 let minimised = false;
 
-btnMinimise.addEventListener('click', () => {
+handleBar.addEventListener('click', () => {
   minimised = !minimised;
   controlsPanel.classList.toggle('minimised', minimised);
   resize();
