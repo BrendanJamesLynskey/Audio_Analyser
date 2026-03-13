@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Audio Analyser — Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep:          #0a0a18;
+    --indigo-bright: #7b68ee;
+    --violet-glow:   #9d7fe0;
+    --cyan:          #4ecdc4;
+    --panel:         rgba(15, 12, 30, 0.88);
+    --text-primary:  #c8c8e0;
+    --text-dim:      #8888aa;
+    --safe-top:    env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--deep);
+    color: var(--text-primary);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 20%, rgba(74, 58, 138, 0.15), transparent),
+      radial-gradient(ellipse 50% 60% at 70% 80%, rgba(40, 80, 160, 0.10), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='%23c8c8e0'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .accent-border-top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--indigo-bright), var(--violet-glow), var(--indigo-bright), transparent);
+    z-index: 100;
+  }
+
+  canvas#viz-main {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 55%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  canvas#viz-time {
+    position: fixed;
+    top: 55%; left: 0;
+    width: 100%; height: 20%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .divider-line {
+    position: fixed;
+    top: 55%; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(123, 104, 238, 0.25), transparent);
+    z-index: 5;
+  }
+
+  .time-label {
+    position: fixed;
+    top: calc(55% - 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 10;
+    background: var(--deep);
+    padding: 0 8px;
+  }
+
+  .controls-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 50;
+    background: var(--panel);
+    border-top: 1px solid rgba(123, 104, 238, 0.2);
+    padding: 14px 20px calc(14px + var(--safe-bottom));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    max-height: 45%;
+    overflow-y: auto;
+  }
+
+  header {
+    position: fixed;
+    top: calc(8px + var(--safe-top));
+    left: 16px;
+    z-index: 50;
+  }
+
+  header h1 {
+    font-weight: 200;
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  header .subtitle {
+    font-weight: 300;
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  .btn-listen {
+    width: 100%;
+    padding: 14px 24px;
+    min-height: 48px;
+    border-radius: 30px;
+    border: 1px solid rgba(123, 104, 238, 0.5);
+    background: rgba(123, 104, 238, 0.1);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-weight: 300;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-listen.active {
+    background: rgba(123, 104, 238, 0.2);
+    border-color: var(--indigo-bright);
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(123, 104, 238, 0.15); }
+    50%      { box-shadow: 0 0 20px rgba(123, 104, 238, 0.35); }
+  }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    color: var(--text-dim);
+    font-size: 0.5rem;
+  }
+
+  .ornament .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(123, 104, 238, 0.3), transparent);
+  }
+
+  .mode-label {
+    font-weight: 300;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .mode-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    padding: 10px 6px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: 1px solid rgba(123, 104, 238, 0.2);
+    background: rgba(123, 104, 238, 0.04);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-weight: 300;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .mode-btn.selected {
+    background: rgba(123, 104, 238, 0.18);
+    border-color: rgba(123, 104, 238, 0.6);
+    color: var(--text-primary);
+  }
+
+  .control-group { margin-top: 8px; }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 300;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(123, 104, 238, 0.15);
+    outline: none;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--violet-glow), var(--indigo-bright));
+    box-shadow: 0 0 8px rgba(123, 104, 238, 0.4);
+  }
+
+  .info-bar {
+    position: fixed;
+    top: calc(8px + var(--safe-top));
+    right: 12px;
+    z-index: 50;
+    font-size: 0.45rem;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="accent-border-top"></div>
+
+<canvas id="viz-main"></canvas>
+<canvas id="viz-time"></canvas>
+<div class="divider-line"></div>
+<span class="time-label">time domain</span>
+
+<header>
+  <h1>Audio Analyser</h1>
+  <div class="subtitle">Real-time spectral analysis</div>
+</header>
+
+<div class="info-bar" id="info-bar">STFT &middot; 44100 Hz</div>
+
+<div class="controls-panel">
+  <button class="btn-listen" id="btn-listen">LISTEN</button>
+
+  <div class="ornament">
+    <span>&middot;</span>
+    <span class="line"></span>
+    <span>&#x2736;</span>
+    <span class="line"></span>
+    <span>&middot;</span>
+  </div>
+
+  <div class="mode-label">Analysis Mode</div>
+  <div class="mode-group">
+    <button class="mode-btn selected" data-mode="stft">STFT</button>
+    <button class="mode-btn" data-mode="cwt">CWT</button>
+    <button class="mode-btn" data-mode="dwt">DWT</button>
+    <button class="mode-btn" data-mode="constantq">Constant-Q</button>
+  </div>
+
+  <div class="ornament">
+    <span>&middot;</span>
+    <span class="line"></span>
+    <span>&#x2736;</span>
+    <span class="line"></span>
+    <span>&middot;</span>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Gain</span>
+      <span id="val-gain">80%</span>
+    </div>
+    <input type="range" class="slider" id="slider-gain" min="0" max="100" value="80">
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Smoothing</span>
+      <span id="val-smooth">80%</span>
+    </div>
+    <input type="range" class="slider" id="slider-smooth" min="0" max="100" value="80">
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Brightness</span>
+      <span id="val-bright">100%</span>
+    </div>
+    <input type="range" class="slider" id="slider-bright" min="10" max="100" value="100">
+  </div>
+</div>
+
+<script>
+/* ── Analyser Engine (inline for mobile) ── */
+class AnalyserEngine {
+  constructor() {
+    this.ctx = null;
+    this.analyser = null;
+    this.stream = null;
+    this.source = null;
+    this.running = false;
+    this.fftSize = 2048; // reduced for mobile
+    this.mode = 'stft';
+  }
+
+  async start() {
+    if (this.running) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // iOS unlock
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.source = this.ctx.createMediaStreamSource(this.stream);
+    this.analyser = this.ctx.createAnalyser();
+    this.analyser.fftSize = this.fftSize;
+    this.analyser.smoothingTimeConstant = 0.8;
+    this.analyser.minDecibels = -100;
+    this.analyser.maxDecibels = -20;
+    this.source.connect(this.analyser);
+    this.running = true;
+    this._freqData = new Uint8Array(this.analyser.frequencyBinCount);
+    this._timeData = new Float32Array(this.analyser.fftSize);
+  }
+
+  stop() {
+    if (!this.running) return;
+    if (this.source) this.source.disconnect();
+    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+    if (this.ctx) this.ctx.close();
+    this.running = false;
+    this.ctx = null; this.analyser = null; this.source = null; this.stream = null;
+  }
+
+  setMode(mode) { this.mode = mode; }
+  getSampleRate() { return this.ctx ? this.ctx.sampleRate : 44100; }
+
+  getTimeDomainData() {
+    if (!this.running) return new Float32Array(512);
+    this.analyser.getFloatTimeDomainData(this._timeData);
+    return this._timeData;
+  }
+
+  getAnalysisData() {
+    if (!this.running) return { data: new Float32Array(64), freqs: new Float32Array(64), labels: [] };
+    this.analyser.getByteFrequencyData(this._freqData);
+    switch (this.mode) {
+      case 'stft':      return this._stft();
+      case 'cwt':       return this._cwt();
+      case 'dwt':       return this._dwt();
+      case 'constantq': return this._constantQ();
+      default:          return this._stft();
+    }
+  }
+
+  _stft() {
+    const bc = this.analyser.frequencyBinCount;
+    const sr = this.getSampleRate();
+    const n = Math.min(bc, 512);
+    const data = new Float32Array(n), freqs = new Float32Array(n), labels = [];
+    for (let i = 0; i < n; i++) { data[i] = this._freqData[i] / 255; freqs[i] = (i * sr) / this.fftSize; }
+    const step = Math.floor(n / 6);
+    for (let i = 0; i < 6; i++) { const f = freqs[i * step]; labels.push(f < 1000 ? Math.round(f) + '' : (f / 1000).toFixed(1) + 'k'); }
+    return { data, freqs, labels };
+  }
+
+  _cwt() {
+    const ns = 128, sr = this.getSampleRate(), bc = this.analyser.frequencyBinCount, fr = sr / this.fftSize;
+    const data = new Float32Array(ns), freqs = new Float32Array(ns), labels = [];
+    const fMin = 30, fMax = sr / 2;
+    for (let s = 0; s < ns; s++) {
+      const t = s / (ns - 1); const cf = fMin * Math.pow(fMax / fMin, t); freqs[s] = cf;
+      const bw = cf * 0.15; const lo = Math.max(0, Math.floor((cf - bw) / fr)); const hi = Math.min(bc - 1, Math.ceil((cf + bw) / fr));
+      let sum = 0, ws = 0;
+      for (let b = lo; b <= hi; b++) { const d = (b * fr - cf) / (bw || 1); const w = Math.exp(-0.5 * d * d); sum += (this._freqData[b] / 255) * w; ws += w; }
+      data[s] = ws > 0 ? sum / ws : 0;
+    }
+    for (let i = 0; i < 6; i++) { const idx = Math.floor((i / 5) * (ns - 1)); const f = freqs[idx]; labels.push(f < 1000 ? Math.round(f) + '' : (f / 1000).toFixed(1) + 'k'); }
+    return { data, freqs, labels };
+  }
+
+  _dwt() {
+    const sr = this.getSampleRate(), bc = this.analyser.frequencyBinCount, fr = sr / this.fftSize;
+    const nL = 9, bpL = 16, total = nL * bpL;
+    const data = new Float32Array(total), freqs = new Float32Array(total), labels = [];
+    for (let l = 0; l < nL; l++) {
+      const fLo = 20 * Math.pow(2, l), fHi = 20 * Math.pow(2, l + 1);
+      const lo = Math.max(0, Math.floor(fLo / fr)), hi = Math.min(bc - 1, Math.ceil(fHi / fr));
+      let sum = 0, c = 0;
+      for (let b = lo; b <= hi; b++) { sum += this._freqData[b] / 255; c++; }
+      const avg = c > 0 ? sum / c : 0;
+      for (let j = 0; j < bpL; j++) { const idx = l * bpL + j; const sb = lo + Math.floor((j / bpL) * (hi - lo + 1)); data[idx] = avg * 0.6 + (sb < bc ? this._freqData[sb] / 255 : 0) * 0.4; freqs[idx] = fLo + (j / bpL) * (fHi - fLo); }
+      labels.push((fLo * Math.SQRT2) < 1000 ? Math.round(fLo * Math.SQRT2) + '' : ((fLo * Math.SQRT2) / 1000).toFixed(1) + 'k');
+    }
+    return { data, freqs, labels };
+  }
+
+  _constantQ() {
+    const sr = this.getSampleRate(), bc = this.analyser.frequencyBinCount, fr = sr / this.fftSize;
+    const Q = 20, bpo = 24, fMin = 27.5, fMax = Math.min(sr / 2, 16744);
+    const nOct = Math.log2(fMax / fMin), nB = Math.round(nOct * bpo);
+    const data = new Float32Array(nB), freqs = new Float32Array(nB), labels = [];
+    const notes = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#'];
+    for (let k = 0; k < nB; k++) {
+      const cf = fMin * Math.pow(2, k / bpo); freqs[k] = cf;
+      const bw = cf / Q; const lo = Math.max(0, Math.floor((cf - bw / 2) / fr)); const hi = Math.min(bc - 1, Math.ceil((cf + bw / 2) / fr));
+      if (lo >= bc) { data[k] = 0; continue; }
+      let sum = 0, ws = 0;
+      for (let b = lo; b <= hi; b++) { const t = hi > lo ? (b - lo) / (hi - lo) : 0.5; const w = 0.5 * (1 - Math.cos(2 * Math.PI * t)); sum += (this._freqData[b] / 255) * w; ws += w; }
+      data[k] = ws > 0 ? sum / ws : 0;
+    }
+    const li = Math.floor(nB / 6);
+    for (let i = 0; i < 6; i++) { const idx = i * li; const f = freqs[idx]; if (f) { const s = Math.round(12 * Math.log2(f / 27.5)); labels.push(notes[((s % 12) + 12) % 12] + Math.floor((s + 9) / 12)); } }
+    return { data, freqs, labels };
+  }
+}
+
+/* ── App Controller ── */
+const engine = new AnalyserEngine();
+let listening = false, animId = null, particles = [], history = [];
+let brightness = 1.0, dpr = window.devicePixelRatio || 1;
+
+const btnListen = document.getElementById('btn-listen');
+const modeButtons = document.querySelectorAll('.mode-btn');
+const sliderGain = document.getElementById('slider-gain');
+const sliderSmooth = document.getElementById('slider-smooth');
+const sliderBright = document.getElementById('slider-bright');
+const valGain = document.getElementById('val-gain');
+const valSmooth = document.getElementById('val-smooth');
+const valBright = document.getElementById('val-bright');
+const infoBar = document.getElementById('info-bar');
+const canvasMain = document.getElementById('viz-main');
+const canvasTime = document.getElementById('viz-time');
+const ctxMain = canvasMain.getContext('2d');
+const ctxTime = canvasTime.getContext('2d');
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  canvasMain.width = window.innerWidth * dpr;
+  canvasMain.height = Math.floor(window.innerHeight * 0.55) * dpr;
+  canvasMain.style.width = window.innerWidth + 'px';
+  canvasMain.style.height = Math.floor(window.innerHeight * 0.55) + 'px';
+  canvasTime.width = window.innerWidth * dpr;
+  canvasTime.height = Math.floor(window.innerHeight * 0.20) * dpr;
+  canvasTime.style.width = window.innerWidth + 'px';
+  canvasTime.style.height = Math.floor(window.innerHeight * 0.20) + 'px';
+  history = [];
+  initParticles();
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 25; i++) {
+    particles.push({
+      x: Math.random() * canvasMain.width,
+      y: Math.random() * canvasMain.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.2 + 0.4,
+      a: Math.random() * 0.2 + 0.05,
+      hue: 220 + Math.random() * 60
+    });
+  }
+}
+
+async function toggleListen() {
+  if (!listening) {
+    try {
+      await engine.start();
+      listening = true;
+      btnListen.textContent = 'STOP';
+      btnListen.classList.add('active');
+      history = [];
+      draw();
+    } catch (e) { console.error('Mic denied:', e); }
+  } else {
+    listening = false;
+    engine.stop();
+    btnListen.textContent = 'LISTEN';
+    btnListen.classList.remove('active');
+    if (animId) cancelAnimationFrame(animId);
+    animId = null;
+  }
+}
+
+function selectMode(mode) {
+  engine.setMode(mode);
+  modeButtons.forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+  history = [];
+}
+
+function spectralColor(t, alpha) {
+  const a = alpha * brightness;
+  if (t < 0.2)  return `hsla(240, 80%, ${20 + t * 200}%, ${a})`;
+  if (t < 0.4)  return `hsla(${240 - (t - 0.2) * 600}, 85%, ${40 + (t - 0.2) * 100}%, ${a})`;
+  if (t < 0.6)  return `hsla(${120 + (t - 0.4) * 300}, 80%, ${50 + (t - 0.4) * 50}%, ${a})`;
+  if (t < 0.8)  return `hsla(${60 - (t - 0.6) * 200}, 90%, ${55 + (t - 0.6) * 80}%, ${a})`;
+  return `hsla(${300 + (t - 0.8) * 300}, 70%, ${70 + (t - 0.8) * 150}%, ${a})`;
+}
+
+function heatColor(t) {
+  if (t < 0.33) return `rgb(${Math.round(t * 3 * 200)}, 0, ${Math.round(t * 3 * 180)})`;
+  if (t < 0.66) return `rgb(200, ${Math.round((t - 0.33) * 3 * 200)}, ${Math.round(180 - (t - 0.33) * 3 * 180)})`;
+  return `rgb(${200 + Math.round((t - 0.66) * 3 * 55)}, 200, ${Math.round((t - 0.66) * 3 * 255)})`;
+}
+
+function draw() {
+  if (!listening) return;
+  animId = requestAnimationFrame(draw);
+  const analysis = engine.getAnalysisData();
+  const timeData = engine.getTimeDomainData();
+  const gain = sliderGain.value / 100;
+  drawMainViz(analysis, gain);
+  drawTimeWaveform(timeData);
+  const modeNames = { stft: 'STFT', cwt: 'CWT', dwt: 'DWT', constantq: 'CQ' };
+  infoBar.textContent = `${modeNames[engine.mode]} · ${engine.getSampleRate()} Hz`;
+}
+
+function drawMainViz(analysis, gain) {
+  const w = canvasMain.width, h = canvasMain.height;
+  const { data, freqs, labels } = analysis;
+  const mode = engine.mode;
+
+  ctxMain.fillStyle = 'rgba(10, 10, 24, 0.14)';
+  ctxMain.fillRect(0, 0, w, h);
+
+  // Spectrogram
+  const sliceH = 2 * dpr;
+  const col = new Array(data.length);
+  for (let i = 0; i < data.length; i++) col[i] = Math.min(1, data[i] * (0.5 + gain * 1.5));
+  history.push(col);
+  const maxS = Math.floor(h * 0.35 / sliceH);
+  if (history.length > maxS) history.shift();
+
+  const sH = h * 0.35;
+  for (let row = 0; row < history.length; row++) {
+    const slice = history[row];
+    const y = sH - (history.length - row) * sliceH;
+    const bW = w / slice.length;
+    for (let i = 0; i < slice.length; i++) {
+      if (slice[i] < 0.02) continue;
+      ctxMain.fillStyle = heatColor(slice[i] * brightness);
+      ctxMain.fillRect(i * bW, y, bW + 1, sliceH);
+    }
+  }
+
+  // Bars/curve
+  const barTop = sH + 8 * dpr, barH = h - barTop - 16 * dpr;
+  const barW = w / data.length;
+
+  ctxMain.save();
+  ctxMain.globalAlpha = 0.6;
+  ctxMain.shadowBlur = 8 * dpr;
+
+  if (mode === 'dwt') {
+    const bpL = 16, nL = Math.floor(data.length / bpL);
+    for (let l = 0; l < nL; l++) {
+      let sum = 0;
+      for (let j = 0; j < bpL; j++) sum += data[l * bpL + j];
+      const avg = Math.min(1, (sum / bpL) * (0.5 + gain * 1.5));
+      const x = (l / nL) * w, bw = w / nL - 2 * dpr, bh = avg * barH;
+      ctxMain.shadowColor = spectralColor(l / nL, 0.8);
+      ctxMain.fillStyle = spectralColor(l / nL, 0.8);
+      ctxMain.fillRect(x + dpr, barTop + barH - bh, bw, bh);
+    }
+  } else {
+    ctxMain.beginPath();
+    for (let i = 0; i < data.length; i++) {
+      const v = Math.min(1, data[i] * (0.5 + gain * 1.5));
+      const x = i * barW + barW / 2, y = barTop + barH * (1 - v);
+      if (i === 0) ctxMain.moveTo(x, y); else ctxMain.lineTo(x, y);
+    }
+    ctxMain.strokeStyle = 'rgba(123, 104, 238, 0.7)';
+    ctxMain.shadowColor = 'rgba(123, 104, 238, 0.5)';
+    ctxMain.lineWidth = 1.5 * dpr;
+    ctxMain.stroke();
+    ctxMain.lineTo(data.length * barW, barTop + barH);
+    ctxMain.lineTo(0, barTop + barH);
+    ctxMain.closePath();
+    const grad = ctxMain.createLinearGradient(0, barTop, 0, barTop + barH);
+    grad.addColorStop(0, `rgba(123, 104, 238, ${0.2 * brightness})`);
+    grad.addColorStop(1, 'rgba(10, 10, 24, 0)');
+    ctxMain.fillStyle = grad;
+    ctxMain.fill();
+  }
+  ctxMain.restore();
+
+  // Particles
+  const third = Math.floor(data.length / 3);
+  let bass = 0;
+  for (let i = 0; i < third; i++) bass += data[i];
+  bass = (bass / third) * gain;
+
+  for (const p of particles) {
+    p.x += p.vx + (Math.random() - 0.5) * bass * 3;
+    p.y += p.vy + (Math.random() - 0.5) * bass * 2;
+    if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+    if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+    ctxMain.beginPath();
+    ctxMain.arc(p.x, p.y, p.r * (1 + bass * 2), 0, Math.PI * 2);
+    ctxMain.fillStyle = `hsla(${p.hue}, 60%, 70%, ${p.a + bass * 0.2})`;
+    ctxMain.fill();
+  }
+
+  // Labels
+  ctxMain.fillStyle = 'rgba(136, 136, 170, 0.4)';
+  ctxMain.font = `${8 * dpr}px Inter, sans-serif`;
+  for (let i = 0; i < labels.length; i++) {
+    ctxMain.fillText(labels[i], (i / labels.length) * w + 3 * dpr, barTop + barH + 11 * dpr);
+  }
+}
+
+function drawTimeWaveform(timeData) {
+  const w = canvasTime.width, h = canvasTime.height;
+  const gain = sliderGain.value / 100;
+
+  ctxTime.fillStyle = 'rgba(10, 10, 24, 0.3)';
+  ctxTime.fillRect(0, 0, w, h);
+
+  // Center line
+  ctxTime.strokeStyle = 'rgba(123, 104, 238, 0.06)';
+  ctxTime.lineWidth = 1;
+  ctxTime.beginPath();
+  ctxTime.moveTo(0, h / 2);
+  ctxTime.lineTo(w, h / 2);
+  ctxTime.stroke();
+
+  let rms = 0;
+  for (let i = 0; i < timeData.length; i++) rms += timeData[i] * timeData[i];
+  rms = Math.sqrt(rms / timeData.length);
+  const intensity = Math.min(1, rms * 4 * (0.5 + gain));
+
+  const step = w / timeData.length;
+
+  // Glow
+  ctxTime.save();
+  ctxTime.shadowBlur = 6 * dpr;
+  ctxTime.shadowColor = `rgba(78, 205, 196, ${0.25 * brightness})`;
+  ctxTime.strokeStyle = `rgba(78, 205, 196, ${(0.12 + intensity * 0.35) * brightness})`;
+  ctxTime.lineWidth = 2.5 * dpr;
+  ctxTime.beginPath();
+  for (let i = 0; i < timeData.length; i++) {
+    const x = i * step, y = h / 2 - timeData[i] * (h / 2) * 0.8 * (0.5 + gain);
+    if (i === 0) ctxTime.moveTo(x, y); else ctxTime.lineTo(x, y);
+  }
+  ctxTime.stroke();
+  ctxTime.restore();
+
+  // Sharp
+  ctxTime.strokeStyle = `rgba(123, 104, 238, ${(0.35 + intensity * 0.45) * brightness})`;
+  ctxTime.lineWidth = 1.2 * dpr;
+  ctxTime.beginPath();
+  for (let i = 0; i < timeData.length; i++) {
+    const x = i * step, y = h / 2 - timeData[i] * (h / 2) * 0.8 * (0.5 + gain);
+    if (i === 0) ctxTime.moveTo(x, y); else ctxTime.lineTo(x, y);
+  }
+  ctxTime.stroke();
+}
+
+// Bindings
+btnListen.addEventListener('click', toggleListen);
+modeButtons.forEach(b => b.addEventListener('click', () => selectMode(b.dataset.mode)));
+sliderGain.addEventListener('input', () => { valGain.textContent = sliderGain.value + '%'; });
+sliderSmooth.addEventListener('input', () => { valSmooth.textContent = sliderSmooth.value + '%'; if (engine.analyser) engine.analyser.smoothingTimeConstant = sliderSmooth.value / 100; });
+sliderBright.addEventListener('input', () => { brightness = sliderBright.value / 100; valBright.textContent = sliderBright.value + '%'; });
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>

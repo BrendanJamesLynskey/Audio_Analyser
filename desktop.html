@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Analyser — Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="accent-border-top"></div>
+
+<canvas id="viz-main"></canvas>
+<canvas id="viz-time"></canvas>
+<div class="divider-line"></div>
+<span class="time-label">time domain</span>
+
+<header>
+  <h1>Audio Analyser</h1>
+  <div class="subtitle">Real-time spectral analysis</div>
+</header>
+
+<div class="controls-panel">
+  <button class="btn-listen" id="btn-listen">LISTEN</button>
+
+  <div class="ornament">
+    <span>&middot;</span>
+    <span class="line"></span>
+    <span>&#x2736;</span>
+    <span class="line"></span>
+    <span>&middot;</span>
+  </div>
+
+  <div class="mode-label">Analysis Mode</div>
+  <div class="mode-group">
+    <button class="mode-btn selected" data-mode="stft">STFT</button>
+    <button class="mode-btn" data-mode="cwt">CWT</button>
+    <button class="mode-btn" data-mode="dwt">DWT</button>
+    <button class="mode-btn" data-mode="constantq">Constant-Q</button>
+  </div>
+
+  <div class="ornament">
+    <span>&middot;</span>
+    <span class="line"></span>
+    <span>&#x2736;</span>
+    <span class="line"></span>
+    <span>&middot;</span>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Gain</span>
+      <span id="val-gain">80%</span>
+    </div>
+    <input type="range" class="slider" id="slider-gain" min="0" max="100" value="80">
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Smoothing</span>
+      <span id="val-smooth">80%</span>
+    </div>
+    <input type="range" class="slider" id="slider-smooth" min="0" max="100" value="80">
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>Brightness</span>
+      <span id="val-bright">100%</span>
+    </div>
+    <input type="range" class="slider" id="slider-bright" min="10" max="100" value="100">
+  </div>
+</div>
+
+<footer>Web Audio API &middot; Real-time analysis</footer>
+<div class="info-bar" id="info-bar">STFT &middot; 44100 Hz &middot; FFT 4096</div>
+
+<script src="analyser-engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

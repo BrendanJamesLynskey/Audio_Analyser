@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: #0a0a18;
+    color: #c8c8e0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 20%, rgba(74, 58, 138, 0.15), transparent),
+      radial-gradient(ellipse 50% 60% at 70% 80%, rgba(106, 76, 147, 0.12), transparent),
+      radial-gradient(ellipse 80% 40% at 50% 50%, rgba(40, 80, 160, 0.08), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.6' fill='%23c8c8e0'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 5;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .glyph {
+    font-size: 2.4rem;
+    color: #7b68ee;
+    text-shadow: 0 0 20px rgba(123, 104, 238, 0.4);
+    line-height: 1;
+  }
+
+  h1 {
+    font-weight: 200;
+    font-size: 2.2rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #c8c8e0;
+    text-shadow: 0 0 30px rgba(123, 104, 238, 0.2);
+  }
+
+  .subtitle {
+    font-weight: 300;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #8888aa;
+    margin-top: -12px;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .btn {
+    display: block;
+    text-decoration: none;
+    padding: 14px 32px;
+    border-radius: 30px;
+    font-family: inherit;
+    font-weight: 300;
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .btn-primary {
+    background: rgba(123, 104, 238, 0.15);
+    border: 1px solid rgba(123, 104, 238, 0.5);
+    color: #c8c8e0;
+  }
+
+  .btn-primary:hover {
+    background: rgba(123, 104, 238, 0.25);
+    border-color: rgba(123, 104, 238, 0.7);
+    box-shadow: 0 0 20px rgba(123, 104, 238, 0.2);
+  }
+
+  .btn-secondary {
+    background: rgba(123, 104, 238, 0.06);
+    border: 1px solid rgba(123, 104, 238, 0.25);
+    color: #8888aa;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(123, 104, 238, 0.12);
+    border-color: rgba(123, 104, 238, 0.4);
+    color: #c8c8e0;
+  }
+
+  .badge {
+    display: none;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7b68ee;
+    background: rgba(123, 104, 238, 0.12);
+    padding: 2px 10px;
+    border-radius: 10px;
+    position: absolute;
+    top: -8px;
+    right: 20px;
+  }
+
+  .badge.visible { display: inline-block; }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 80%;
+    color: #8888aa;
+    font-size: 0.7rem;
+  }
+
+  .ornament .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(123, 104, 238, 0.3), transparent);
+  }
+
+  .footer {
+    font-size: 0.65rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: #666680;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="content">
+  <div class="glyph">&#x2736;</div>
+  <h1>Audio Analyser</h1>
+  <p class="subtitle">Real-time spectral analysis</p>
+
+  <div class="buttons">
+    <a href="desktop.html" class="btn btn-secondary" id="btn-desktop">
+      <span class="badge" id="badge-desktop">recommended</span>
+      Desktop
+    </a>
+    <a href="mobile.html" class="btn btn-secondary" id="btn-mobile">
+      <span class="badge" id="badge-mobile">recommended</span>
+      Mobile
+    </a>
+  </div>
+
+  <div class="ornament">
+    <span>&middot;</span>
+    <span class="line"></span>
+    <span>&#x2736;</span>
+    <span class="line"></span>
+    <span>&middot;</span>
+  </div>
+
+  <div class="footer">
+    STFT &middot; CWT &middot; DWT &middot; Constant-Q<br>
+    Live microphone analysis powered by Web Audio
+  </div>
+</div>
+
+<script>
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints > 1 && window.innerWidth < 768);
+
+  const btnDesktop = document.getElementById('btn-desktop');
+  const btnMobile = document.getElementById('btn-mobile');
+  const badgeDesktop = document.getElementById('badge-desktop');
+  const badgeMobile = document.getElementById('badge-mobile');
+
+  if (isMobile) {
+    btnMobile.classList.replace('btn-secondary', 'btn-primary');
+    badgeMobile.classList.add('visible');
+    btnMobile.parentNode.insertBefore(btnMobile, btnDesktop);
+  } else {
+    btnDesktop.classList.replace('btn-secondary', 'btn-primary');
+    badgeDesktop.classList.add('visible');
+  }
+
+  // Ambient background particles
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    w = canvas.width = window.innerWidth * dpr;
+    h = canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+
+  function initParticles() {
+    particles = [];
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 1.5 + 0.5,
+        a: Math.random() * 0.3 + 0.05,
+        hue: 220 + Math.random() * 60
+      });
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(10, 10, 24, 0.08)';
+    ctx.fillRect(0, 0, w, h);
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = w;
+      if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h;
+      if (p.y > h) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 60%, 70%, ${p.a})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initParticles();
+  draw();
+  window.addEventListener('resize', () => { resize(); initParticles(); });
+</script>
+</body>
+</html>
