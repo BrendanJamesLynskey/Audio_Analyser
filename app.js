@@ -191,36 +191,7 @@ function drawMainViz(analysis, gain) {
   ctxMain.globalAlpha = 0.6;
   ctxMain.shadowBlur = 12 * dpr;
 
-  if (mode === 'dwt') {
-    // DWT: staircase blocks per octave band
-    const binsPerLevel = 32;
-    const numLevels = Math.floor(data.length / binsPerLevel);
-    for (let level = 0; level < numLevels; level++) {
-      let sum = 0;
-      for (let j = 0; j < binsPerLevel; j++) {
-        sum += data[level * binsPerLevel + j];
-      }
-      const avg = Math.min(1, (sum / binsPerLevel) * (0.5 + gain * 1.5));
-      const x = (level / numLevels) * w;
-      const bw = (w / numLevels) - 2 * dpr;
-      const bh = avg * barAreaH;
-      const color = spectralColor(level / numLevels, 0.9);
-      ctxMain.shadowColor = color;
-      ctxMain.fillStyle = color;
-      ctxMain.fillRect(x + dpr, barAreaTop + barAreaH - bh, bw, bh);
-
-      // Sub-detail lines
-      ctxMain.globalAlpha = 0.35;
-      for (let j = 0; j < binsPerLevel; j++) {
-        const v = Math.min(1, data[level * binsPerLevel + j] * (0.5 + gain * 1.5));
-        const sx = x + (j / binsPerLevel) * bw + dpr;
-        const sh = v * barAreaH;
-        ctxMain.fillStyle = spectralColor(level / numLevels, 0.5);
-        ctxMain.fillRect(sx, barAreaTop + barAreaH - sh, Math.max(1, bw / binsPerLevel), sh);
-      }
-      ctxMain.globalAlpha = 0.6;
-    }
-  } else {
+  {
     // STFT, CWT, Constant-Q: smooth curve + bars
     ctxMain.beginPath();
     for (let i = 0; i < data.length; i++) {
@@ -389,7 +360,7 @@ function drawTimeWaveform(timeData, freqData) {
 
 // ── Info Bar ──
 function updateInfo() {
-  const modeNames = { stft: 'STFT', cwt: 'CWT', dwt: 'DWT', constantq: 'Constant-Q' };
+  const modeNames = { stft: 'STFT', cwt: 'CWT', constantq: 'Constant-Q' };
   const sr = engine.getSampleRate();
   infoBar.textContent = `${modeNames[engine.mode]} · ${sr} Hz · FFT ${engine.fftSize}`;
 }

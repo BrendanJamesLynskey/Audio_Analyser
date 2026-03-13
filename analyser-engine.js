@@ -1,6 +1,6 @@
 /* ── Audio Analyser Engine ──
    Provides real-time frequency analysis via multiple transforms:
-   STFT, CWT, DWT, and Constant-Q.
+   STFT, CWT, and Constant-Q.
    All analysis runs on the Web Audio API AnalyserNode (FFT)
    with post-processing to simulate each transform's behaviour. */
 
@@ -12,7 +12,7 @@ class AnalyserEngine {
     this.source = null;
     this.running = false;
     this.fftSize = 4096;
-    this.mode = 'stft'; // stft | cwt | dwt | constantq
+    this.mode = 'stft'; // stft | cwt | constantq
   }
 
   async start() {
@@ -76,7 +76,6 @@ class AnalyserEngine {
     switch (this.mode) {
       case 'stft':      return this._stft();
       case 'cwt':       return this._cwt();
-      case 'dwt':       return this._dwt();
       case 'constantq': return this._constantQ();
       default:          return this._stft();
     }
@@ -151,54 +150,6 @@ class AnalyserEngine {
       const idx = Math.floor((i / 7) * (numScales - 1));
       const f = freqs[idx];
       labels.push(f < 1000 ? Math.round(f) + ' Hz' : (f / 1000).toFixed(1) + ' kHz');
-    }
-
-    return { data, freqs, labels };
-  }
-
-  /* ── DWT (Discrete Wavelet Transform approximation) ──
-     Octave-band decomposition: each level represents one octave.
-     Shows energy in each sub-band as a staircase-like display. */
-  _dwt() {
-    const sr = this.getSampleRate();
-    const binCount = this.analyser.frequencyBinCount;
-    const freqRes = sr / this.fftSize;
-    const numLevels = 10; // ~10 octaves from ~20 Hz to ~20 kHz
-    const binsPerLevel = 32; // visual resolution within each band
-    const totalBins = numLevels * binsPerLevel;
-    const data = new Float32Array(totalBins);
-    const freqs = new Float32Array(totalBins);
-    const labels = [];
-
-    const fBase = 20;
-
-    for (let level = 0; level < numLevels; level++) {
-      const fLo = fBase * Math.pow(2, level);
-      const fHi = fBase * Math.pow(2, level + 1);
-      const loBin = Math.max(0, Math.floor(fLo / freqRes));
-      const hiBin = Math.min(binCount - 1, Math.ceil(fHi / freqRes));
-
-      // Average energy in this octave band
-      let sum = 0;
-      let count = 0;
-      for (let b = loBin; b <= hiBin; b++) {
-        sum += this._freqData[b] / 255;
-        count++;
-      }
-      const avg = count > 0 ? sum / count : 0;
-
-      // Also get detail: sub-bins within the band
-      for (let j = 0; j < binsPerLevel; j++) {
-        const idx = level * binsPerLevel + j;
-        const subBin = loBin + Math.floor((j / binsPerLevel) * (hiBin - loBin + 1));
-        const detail = subBin < binCount ? this._freqData[subBin] / 255 : 0;
-        // Blend band average with detail for visual interest
-        data[idx] = avg * 0.6 + detail * 0.4;
-        freqs[idx] = fLo + (j / binsPerLevel) * (fHi - fLo);
-      }
-
-      const mid = fLo * Math.SQRT2;
-      labels.push(mid < 1000 ? Math.round(mid) + ' Hz' : (mid / 1000).toFixed(1) + ' kHz');
     }
 
     return { data, freqs, labels };

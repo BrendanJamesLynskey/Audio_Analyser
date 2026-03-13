@@ -1,6 +1,6 @@
 # Audio Analyser
 
-Real-time audio spectral analyser running entirely in the browser. Captures microphone input and visualises it using four different frequency-analysis techniques -- STFT, CWT, DWT, and Constant-Q -- alongside a live time-domain waveform.
+Real-time audio spectral analyser running entirely in the browser. Captures microphone input and visualises it using three different frequency-analysis techniques -- STFT, CWT, and Constant-Q -- alongside a live time-domain waveform.
 
 **[Launch Audio Analyser](https://brendanjameslynskey.github.io/Audio_Analyser/)**
 
@@ -8,7 +8,7 @@ Real-time audio spectral analyser running entirely in the browser. Captures micr
 
 ## Features
 
-- **Four analysis modes** -- switch between STFT, CWT, DWT, and Constant-Q in real time
+- **Three analysis modes** -- switch between STFT, CWT, and Constant-Q in real time
 - **Scrolling spectrogram** -- heat-mapped waterfall display scrolling with time
 - **Time-domain waveform** -- live oscilloscope view of the raw audio signal
 - **Audio-reactive particles** -- ambient particle system driven by bass, mid, and high energy bands
@@ -53,7 +53,6 @@ The mobile build is a single self-contained HTML file with all CSS and JavaScrip
 | **Listen / Stop** | Start or stop microphone capture |
 | **STFT** | Short-Time Fourier Transform -- linear frequency spectrum |
 | **CWT** | Continuous Wavelet Transform -- logarithmic scalogram |
-| **DWT** | Discrete Wavelet Transform -- octave-band decomposition |
 | **Constant-Q** | Constant-Q Transform -- musical pitch resolution |
 | **Gain** | Amplification of the visualisation |
 | **Smoothing** | Temporal smoothing of frequency data (0--100%) |
@@ -87,16 +86,6 @@ The CWT analyses a signal by correlating it with scaled and shifted versions of 
 
 The resulting **scalogram** is a time-scale (or equivalently, time-frequency) representation with resolution that adapts to the content -- a significant advantage over the STFT's fixed grid.
 
-### The Discrete Wavelet Transform (1988)
-
-While the CWT provides a rich, continuous representation, it is highly redundant and computationally expensive. Ingrid Daubechies and St&eacute;phane Mallat independently developed the theoretical framework that made discrete, efficient wavelet analysis practical.
-
-Mallat's 1989 paper on **multiresolution analysis** showed that the wavelet transform could be computed as a cascade of filters -- a pair of conjugate mirror filters (lowpass and highpass) applied recursively. Each stage splits the signal into a coarse approximation and fine detail at a particular scale, halving the frequency band and the number of samples at each level.
-
-Daubechies constructed the first family of compactly supported orthonormal wavelets (the celebrated *Daubechies wavelets*) in 1988, providing the mathematical foundation for the filter-bank implementation. The result is an **octave-band decomposition**: each level of the DWT captures energy in one octave of the frequency spectrum.
-
-This structure maps naturally onto human hearing, which is approximately logarithmic in frequency. The DWT is computationally efficient (O(N) complexity), making it suitable for real-time applications, and forms the basis of the JPEG 2000 image compression standard and many audio coding schemes.
-
 ### The Constant-Q Transform (1991)
 
 Judith Brown introduced the Constant-Q Transform in her 1991 paper *Calculation of a constant Q spectral transform*, specifically designed for musical signal analysis. The key insight is that in Western music, the frequency ratio between adjacent notes is constant (the twelfth root of two for equal temperament), so a useful musical analysis should have frequency bins that are logarithmically spaced with a **constant quality factor** Q -- the ratio of each bin's centre frequency to its bandwidth.
@@ -114,7 +103,6 @@ The original CQT was computationally expensive, but efficient algorithms develop
 3. **Post-processing** -- depending on the selected mode, the raw FFT bins are remapped:
    - **STFT**: displayed directly as a linear frequency spectrum
    - **CWT**: Gaussian-weighted interpolation across logarithmically spaced centre frequencies, simulating Morlet wavelet behaviour
-   - **DWT**: octave-band energy averaging with sub-band detail overlay
    - **Constant-Q**: Hann-windowed summation with logarithmic bin spacing and constant Q factor
 4. **Visualisation** -- dual-canvas rendering: scrolling spectrogram + spectral curve (upper), time-domain oscilloscope (lower), with audio-reactive particles and ambient glow effects
 
